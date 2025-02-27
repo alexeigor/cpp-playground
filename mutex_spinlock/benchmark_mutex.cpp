@@ -65,11 +65,47 @@ static void BM_SpinlockMutex(benchmark::State& state) {
 // Register benchmarks with different thread counts
 BENCHMARK(BM_StdMutex)
     ->Arg(100000) // 100K iterations per thread
-    ->Threads(1)->Threads(2)->Threads(4)->Threads(8)->Threads(16);
+    ->Threads(1)->Threads(2)->Threads(4)->Threads(8);
 
 BENCHMARK(BM_SpinlockMutex)
     ->Arg(100000) // 100K iterations per thread
-    ->Threads(1)->Threads(2)->Threads(4)->Threads(8)->Threads(16);
+    ->Threads(1)->Threads(2)->Threads(4)->Threads(8);
+
+static void BM_Mutex_LockUnlock(benchmark::State& state) {
+    std::mutex mtx;
+    for (auto _ : state) {
+        mtx.lock();
+        mtx.unlock();
+    }
+}
+
+static void BM_Mutex_LockUnlock_2(benchmark::State& state) {
+    std::mutex mtx;
+    std::mutex mtx_1;
+    for (auto _ : state) {
+        mtx.lock();
+        mtx.unlock();
+        mtx_1.lock();
+        mtx_1.unlock();
+    }
+}
+
+// Register the function as a benchmark
+BENCHMARK(BM_Mutex_LockUnlock);
+BENCHMARK(BM_Mutex_LockUnlock_2);
+
+static void BM_Mutex_Contended(benchmark::State& state) {
+    std::mutex mtx;
+    #pragma omp parallel num_threads(state.range(0))
+    {
+        for (auto _ : state) {
+            mtx.lock();
+            mtx.unlock();
+        }
+    }
+}
+
+BENCHMARK(BM_Mutex_Contended)->Range(1, 8);
 
 // Main function for Google Benchmark
 BENCHMARK_MAIN();
